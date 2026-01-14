@@ -74,24 +74,31 @@
       box-shadow: 0 0 0 2px var(--primary);
     }
 
-    /* Buttons */
-    button {
-      font-weight: 600;
+    /* ADD Button Style */
+    .btn-add {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--secondary-text);
+      background-color: var(--secondary);
+      text-transform: none;
+      letter-spacing: normal;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 0 24px;
       border-radius: 8px;
       border: none;
-      cursor: pointer;
       transition: all 0.2s;
     }
 
-    .btn-add {
-      background-color: var(--secondary);
-      color: var(--secondary-text);
-      padding: 0 24px;
+    .btn-add:hover {
+      background-color: var(--secondary-hover);
     }
 
-    .btn-add:hover { background-color: var(--secondary-hover); }
+    .btn-add:active {
+      transform: scale(0.97);
+    }
 
-    /* Status Container (HStack style) */
+    /* HStack Status Bar */
     .status-container {
       display: flex;
       justify-content: space-between;
@@ -104,11 +111,14 @@
 
     .refresh-btn {
       background: none;
+      border: none;
       color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      font-weight: 600;
       font-size: 13px;
       padding: 6px 0;
+      cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
@@ -124,22 +134,13 @@
       letter-spacing: 0.05em;
     }
 
-    /* Sort & Chips Row */
-    .filter-row {
+    /* Sort & Chips Section (Stacked Layout) */
+    .filter-section {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      flex-direction: column;
       gap: 16px;
       margin-bottom: 24px;
-    }
-
-    .sort-select {
-      background: #eee;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #374151;
-      cursor: pointer;
+      align-items: flex-start;
     }
 
     .chips {
@@ -165,6 +166,16 @@
 
     .chip .remove { margin-left: 6px; opacity: 0.5; }
     .chip .remove:hover { color: #ef4444; opacity: 1; }
+
+    .sort-select {
+      background: #eee;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+      width: auto;
+    }
 
     /* App List */
     #apps { display: flex; flex-direction: column; gap: 12px; }
@@ -196,13 +207,16 @@
     .actions { margin-top: 12px; display: flex; gap: 8px; }
     .actions button {
       background: #f3f4f6;
+      border: none;
+      border-radius: 6px;
       color: var(--primary);
       font-size: 13px;
+      font-weight: 600;
       padding: 6px 12px;
+      cursor: pointer;
     }
 
     @media (max-width: 600px) {
-      .filter-row { flex-direction: column; }
       .meta { flex-direction: column; gap: 4px; }
     }
   </style>
@@ -225,8 +239,9 @@
       <div class="last-refreshed" id="info">Not refreshed yet</div>
     </div>
 
-    <div class="filter-row">
+    <div class="filter-section">
       <div class="chips" id="chips"></div>
+      
       <select id="sortOrder" class="sort-select" onchange="updateSort()">
         <option value="updated">Recently Updated</option>
         <option value="released_new">Newest Released</option>
@@ -332,10 +347,10 @@
     refreshBtn.disabled = false;
   }
 
-  // 24h format, no seconds
   function formatRefreshTime(isoString) {
     if (!isoString) return "Not refreshed yet";
     const date = new Date(isoString);
+    // 24h format, No seconds
     return "Last refreshed: " + date.toLocaleDateString('en-GB') + " " + 
            date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
   }
@@ -353,10 +368,8 @@
   }
 
   function render() {
-    // Info
     document.getElementById('info').textContent = formatRefreshTime(state.lastRefreshed);
 
-    // Chips
     const chipsEl = document.getElementById('chips');
     chipsEl.innerHTML = "";
     const allChip = document.createElement("div");
@@ -373,7 +386,6 @@
       chipsEl.appendChild(chip);
     });
 
-    // Apps
     const appsEl = document.getElementById('apps');
     appsEl.innerHTML = "";
 
