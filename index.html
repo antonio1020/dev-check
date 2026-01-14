@@ -211,21 +211,208 @@
   </style>
 </head>
 
+  
 <body>
-  <div class="container">
-    <h1>Developer Tracker</h1>
 
-    <div class="controls">
-      <input id="devInput" placeholder="Add developer name" />
-      <button onclick="addDeveloper()">Add</button>
-      <button onclick="refreshAll()">Refresh</button>
-    </div>
+  <h1>App Store Developer Tracker</h1>
 
-    <div class="info" id="info"></div>
-    <div class="chips" id="chips"></div>
-    <div id="apps"></div>
+  <div class="controls">
+    <input id="devInput" placeholder="Add developer name" />
+    <button onclick="addDeveloper()">Add</button>
+    <button onclick="refreshAll()">Refresh</button>
   </div>
 
-  <!-- JS stays exactly the same as before -->
+  <div class="info" id="info"></div>
+  <div class="chips" id="chips"></div>
+  <div id="apps"></div>
+
+<script>
+  const STORAGE_KEY = "appTrackerData";
+
+  let state = {
+    developers: [],
+    apps: [],
+    lastRefreshed: null,
+    activeDeveloper: "ALL"
+  };
+
+  // ---------- Persistence ----------
+  function loadState() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) state = JSON.parse(saved);
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // ---------- Developer Management ----------
+  function addDeveloper() {
+    const name = devInput.value.trim();
+    if (!name) return;
+
+    if (!state.developers.find(d => d.name === name)) {
+      state.developers.push({ name });
+      saveState();
+      render();
+    }
+
+    devInput.value = "";
+  }
+
+  function removeDeveloper(name) {
+    state.developers = state.developers.filter(d => d.name !== name);
+    state.apps = state.apps.filter(app => app.developer !== name);
+
+    if (state.activeDeveloper === name) {
+      state.activeDeveloper = "ALL";
+    }
+
+    saveState();
+    render();
+  }
+
+  // ---------- Fetching ----------
+  async function fetchAppsForDeveloper(devName) {
+    const url =
+      "https://itunes.apple.com/search?" +
+      "term=" + encodeURIComponent(devName) +
+      "&entity=software&limit=50";
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return data.results
+      .filter(a => a.artistName.toLowerCase() === devName.toLowerCase())
+      .map(a => ({
+        id: a.trackId,
+        name: a.trackName,
+        icon: a.artworkUrl100,
+        url: a.trackViewUrl,
+        developer: devName,
+        v1: a.releaseDate,
+        latest: a.currentVersionReleaseDate,
+        rating: a.averageUserRating || null,
+        ratingCount: a.userRatingCount || 0
+      }));
+  }
+
+  async function refreshAll() {
+    state.apps = [];
+
+    for (const dev of state.developers) {
+      const apps = await fetchAppsForDeveloper(dev.name);
+      state.apps.push(...apps);
+    }
+
+    state.lastRefreshed = new Date().toISOString();
+
+    state.apps.sort((a, b) =>
+      new Date(b.latest || 0) - new Date(a.latest || 0)
+    );
+
+    saveState();
+    render();
+  }
+
+  // ---------- Rendering ----------
+  function render() {
+    renderInfo();
+    renderChips();
+    renderApps();
+  }
+
+  function renderInfo() {
+    info.textContent = state.lastRefreshed
+      ? `Last refreshed: ${new Date(state.lastRefreshed).toLocaleString()}`
+      : "Not refreshed yet";
+  }
+
+  function renderChips() {
+    chips.innerHTML = "";
+
+    // ALL chip
+    const allChip = document.createElement("div");
+    allChip.className =
+      "chip" + (state.activeDeveloper === "ALL" ? " active" : "");
+    allChip.textContent = "ALL";
+    allChip.onclick = () => {
+      state.activeDeveloper = "ALL";
+      renderApps();
+    };
+    chips.appendChild(allChip);
+
+    // Developer chips
+    state.developers.forEach(dev => {
+      const chip = document.createElement("div");
+      chip.className =
+        "chip" + (state.activeDeveloper === dev.name ? " active" : "");
+
+      chip.onclick = () => {
+        state.activeDeveloper = dev.name;
+        renderApps();
+      };
+
+      const label = document.createElement("span");
+      label.textContent = dev.name;
+
+      const remove = document.createElement("span");
+      remove.textContent = "×";
+      remove.className = "remove";
+      remove.onclick = e => {
+        e.stopPropagation();
+        removeDeveloper(dev.name);
+      };
+
+      chip.appendChild(label);
+      chip.appendChild(remove);
+      chips.appendChild(chip);
+    });
+  }
+
+  function renderApps() {
+    apps.innerHTML = "";
+
+    state.apps
+      .filter(app =>
+        state.activeDeveloper === "ALL" ||
+        app.developer === state.activeDeveloper
+      )
+      .forEach(app => {
+        const div = document.createElement("div");
+        div.className = "app";
+
+        div.innerHTML = `
+          <div class="header">
+            <img src="${app.icon}">
+            <div>
+              <strong>${app.name}</strong><br>
+              <small>${app.developer}</small>
+            </div>
+          </div>
+
+          <div class="meta">
+            v1: ${app.v1 ? new Date(app.v1).toLocaleDateString() : "—"}<br>
+            Latest: ${app.latest ? new Date(app.latest).toLocaleDateString() : "—"}<br>
+            Rating: ${app.rating ?? "—"} (${app.ratingCount})
+          </div>
+
+          <div class="actions">
+            <button onclick="window.open('${app.url}')">Open</button>
+            <button onclick="navigator.clipboard.writeText('${app.url}')">
+              Copy URL
+            </button>
+          </div>
+        `;
+
+        apps.appendChild(div);
+      });
+  }
+
+  // ---------- Init ----------
+  loadState();
+  render();
+</script>
+
 </body>
 </html>
