@@ -21,14 +21,12 @@
 
     * { box-sizing: border-box; }
 
-    html { scrollbar-gutter: stable; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-body);
       color: var(--text-main);
       margin: 0;
-      padding: 80px 20px 40px;
+      padding: 60px 20px 40px;
       line-height: 1.5;
     }
 
@@ -42,22 +40,22 @@
       font-size: 24px;
       font-weight: 400;
       letter-spacing: -0.025em;
-      margin: 0 0 16px 0;
+      margin: 0 0 24px 0;
       color: #344257;
     }
 
-    /* Controls */
+    /* Input Controls */
     .controls {
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: 1fr auto;
       gap: 12px;
       background: var(--bg-card);
       padding: 8px;
       border-radius: 16px;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
 
-    input, button {
+    input, select {
       font-size: 16px;
       border-radius: 8px;
       border: 1px solid transparent;
@@ -69,7 +67,6 @@
       background: #f9fafb;
       padding: 12px 16px;
       font-weight: 500;
-      color: var(--text-main);
     }
 
     input:focus {
@@ -77,63 +74,88 @@
       box-shadow: 0 0 0 2px var(--primary);
     }
 
+    /* Buttons */
     button {
-      font-weight: 500;
-      padding: 0 24px;
+      font-weight: 600;
+      border-radius: 8px;
+      border: none;
       cursor: pointer;
-      min-width: 120px;
+      transition: all 0.2s;
     }
 
-    /* Primary Style (Refresh) */
-    .btn-primary {
-      background-color: var(--primary);
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-    }
-
-    /* Secondary Style (Add) */
-    .btn-secondary {
+    .btn-add {
       background-color: var(--secondary);
       color: var(--secondary-text);
+      padding: 0 24px;
     }
 
-    .btn-secondary:hover {
-      background-color: var(--secondary-hover);
+    .btn-add:hover { background-color: var(--secondary-hover); }
+
+    /* Status Container (HStack style) */
+    .status-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #d1d5db;
     }
 
-    /* Info */
-    .info {
-      font-size: 13px;
-      font-weight: 600;
-      color: #344257;
+    .refresh-btn {
+      background: none;
+      color: var(--primary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      font-size: 13px;
+      padding: 6px 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .refresh-btn:hover { opacity: 0.7; }
+
+    .last-refreshed {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Sort & Chips Row */
+    .filter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
       margin-bottom: 24px;
     }
 
-    /* Chips */
+    .sort-select {
+      background: #eee;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      cursor: pointer;
+    }
+
     .chips {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 32px;
     }
 
     .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
       padding: 6px 14px;
       border-radius: 999px;
       background: #e5e7eb;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       color: #374151;
-      border: 1px solid transparent;
     }
 
     .chip.active {
@@ -141,63 +163,23 @@
       color: white;
     }
 
-    .chip .remove {
-      opacity: 0.5;
-      font-weight: 700;
-      font-size: 16px;
-      margin-left: 4px;
-      line-height: 1;
-    }
+    .chip .remove { margin-left: 6px; opacity: 0.5; }
+    .chip .remove:hover { color: #ef4444; opacity: 1; }
 
-    .chip .remove:hover {
-      opacity: 1;
-      color: #ef4444;
-    }
-
-    /* App list (List Layout) */
-    #apps {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    /* App List */
+    #apps { display: flex; flex-direction: column; gap: 12px; }
 
     .app {
       background: var(--bg-card);
       border-radius: var(--border-radius);
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
+      padding: 20px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
 
-    .header {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-    }
-
-    .header img {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
-      flex-shrink: 0;
-      border: 1px solid #eee;
-    }
-
-    .header-text {
-      flex-grow: 1;
-    }
-
-    .header strong {
-      font-size: 16px;
-      display: block;
-      color: #111827;
-    }
-
-    .header small {
-      color: #6b7280;
-      font-size: 13px;
-    }
+    .header { display: flex; gap: 16px; align-items: center; }
+    .header img { width: 56px; height: 56px; border-radius: 12px; border: 1px solid #eee; }
+    .header-text strong { display: block; font-size: 16px; }
+    .header-text small { color: #6b7280; font-size: 13px; }
 
     .meta {
       font-size: 13px;
@@ -209,32 +191,19 @@
       border-top: 1px solid #f3f4f6;
     }
 
-    .meta b { color: #111827; font-weight: 600; }
+    .meta b { color: #111827; }
 
-    .actions {
-      margin-top: 12px;
-      display: flex;
-      gap: 8px;
-    }
-
+    .actions { margin-top: 12px; display: flex; gap: 8px; }
     .actions button {
       background: #f3f4f6;
-      border: none;
       color: var(--primary);
       font-size: 13px;
-      font-weight: 600;
       padding: 6px 12px;
-      min-width: auto;
-    }
-
-    .actions button:hover {
-      background: #e5e7eb;
     }
 
     @media (max-width: 600px) {
-      .controls { grid-template-columns: 1fr; }
+      .filter-row { flex-direction: column; }
       .meta { flex-direction: column; gap: 4px; }
-      button { height: 44px; }
     }
   </style>
 </head>
@@ -245,48 +214,60 @@
     <h1>App Store Developer Tracker</h1>
 
     <div class="controls">
-      <input id="devInput" placeholder="Enter developer name..." />
-      <button class="btn-secondary" onclick="addDeveloper()">Add</button>
-      <button class="btn-primary" onclick="refreshAll()" id="refreshBtn">Refresh All</button>
+      <input id="devInput" placeholder="Add developer name..." />
+      <button class="btn-add" onclick="addDeveloper()">Add</button>
     </div>
 
-    <div class="info" id="info"></div>
-    <div class="chips" id="chips"></div>
+    <div class="status-container">
+      <button class="refresh-btn" onclick="refreshAll()" id="refreshBtn">
+        ↻ Refresh All
+      </button>
+      <div class="last-refreshed" id="info">Not refreshed yet</div>
+    </div>
+
+    <div class="filter-row">
+      <div class="chips" id="chips"></div>
+      <select id="sortOrder" class="sort-select" onchange="updateSort()">
+        <option value="updated">Recently Updated</option>
+        <option value="released_new">Newest Released</option>
+        <option value="released_old">Oldest Released</option>
+      </select>
+    </div>
+
     <div id="apps"></div>
   </div>
 
 <script>
-  const STORAGE_KEY = "appTrackerData";
+  const STORAGE_KEY = "appTrackerData_v2";
   const devInput = document.getElementById('devInput');
   const refreshBtn = document.getElementById('refreshBtn');
+  const sortSelect = document.getElementById('sortOrder');
 
   let state = {
     developers: [],
     apps: [],
     lastRefreshed: null,
-    activeDeveloper: "ALL"
+    activeDeveloper: "ALL",
+    sortOrder: "updated"
   };
 
-  // Add on Enter key
-  devInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") addDeveloper();
-  });
+  devInput.addEventListener("keypress", (e) => { if (e.key === "Enter") addDeveloper(); });
 
-  // ---------- Persistence ----------
   function loadState() {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) state = JSON.parse(saved);
+    if (saved) {
+      state = { ...state, ...JSON.parse(saved) };
+      sortSelect.value = state.sortOrder;
+    }
   }
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  // ---------- Developer Management ----------
   function addDeveloper() {
     const name = devInput.value.trim();
     if (!name) return;
-
     if (!state.developers.find(d => d.name.toLowerCase() === name.toLowerCase())) {
       state.developers.push({ name });
       saveState();
@@ -296,23 +277,21 @@
   }
 
   function removeDeveloper(name) {
-    // Added Confirmation Dialog
-    const confirmed = confirm(`Are you sure you want to remove "${name}"? All cached apps for this developer will be deleted.`);
-    
-    if (confirmed) {
+    if (confirm(`Remove "${name}" and its cached apps?`)) {
       state.developers = state.developers.filter(d => d.name !== name);
       state.apps = state.apps.filter(app => app.developer !== name);
-
-      if (state.activeDeveloper === name) {
-        state.activeDeveloper = "ALL";
-      }
-
+      if (state.activeDeveloper === name) state.activeDeveloper = "ALL";
       saveState();
       render();
     }
   }
 
-  // ---------- Fetching ----------
+  function updateSort() {
+    state.sortOrder = sortSelect.value;
+    saveState();
+    render();
+  }
+
   async function fetchAppsForDeveloper(devName) {
     const url = `https://itunes.apple.com/search?term=${encodeURIComponent(devName)}&entity=software&limit=50`;
     try {
@@ -326,47 +305,60 @@
           icon: a.artworkUrl100,
           url: a.trackViewUrl,
           developer: devName,
-          v1: a.releaseDate,
+          released: a.releaseDate,
           latest: a.currentVersionReleaseDate,
           rating: a.averageUserRating || 0,
           ratingCount: a.userRatingCount || 0
         }));
-    } catch (e) {
-      return [];
-    }
+    } catch (e) { return []; }
   }
 
   async function refreshAll() {
     refreshBtn.textContent = "Updating...";
     refreshBtn.disabled = true;
     
-    state.apps = [];
+    let allApps = [];
     for (const dev of state.developers) {
       const apps = await fetchAppsForDeveloper(dev.name);
-      state.apps.push(...apps);
+      allApps.push(...apps);
     }
 
+    state.apps = allApps;
     state.lastRefreshed = new Date().toISOString();
-    state.apps.sort((a, b) => new Date(b.latest || 0) - new Date(a.latest || 0));
-
     saveState();
     render();
     
-    refreshBtn.textContent = "Refresh All";
+    refreshBtn.textContent = "↻ Refresh All";
     refreshBtn.disabled = false;
   }
 
-  // ---------- Rendering ----------
+  // 24h format, no seconds
+  function formatRefreshTime(isoString) {
+    if (!isoString) return "Not refreshed yet";
+    const date = new Date(isoString);
+    return "Last refreshed: " + date.toLocaleDateString('en-GB') + " " + 
+           date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  function getSortedApps() {
+    let apps = [...state.apps];
+    if (state.sortOrder === "updated") {
+      apps.sort((a, b) => new Date(b.latest || 0) - new Date(a.latest || 0));
+    } else if (state.sortOrder === "released_new") {
+      apps.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
+    } else if (state.sortOrder === "released_old") {
+      apps.sort((a, b) => new Date(a.released || 0) - new Date(b.released || 0));
+    }
+    return apps;
+  }
+
   function render() {
     // Info
-    document.getElementById('info').textContent = state.lastRefreshed
-      ? `Last refreshed: ${new Date(state.lastRefreshed).toLocaleString()}`
-      : "Not refreshed yet";
+    document.getElementById('info').textContent = formatRefreshTime(state.lastRefreshed);
 
     // Chips
     const chipsEl = document.getElementById('chips');
     chipsEl.innerHTML = "";
-
     const allChip = document.createElement("div");
     allChip.className = `chip ${state.activeDeveloper === "ALL" ? "active" : ""}`;
     allChip.textContent = "ALL";
@@ -377,20 +369,7 @@
       const chip = document.createElement("div");
       chip.className = `chip ${state.activeDeveloper === dev.name ? "active" : ""}`;
       chip.onclick = () => { state.activeDeveloper = dev.name; render(); };
-
-      const label = document.createElement("span");
-      label.textContent = dev.name;
-
-      const remove = document.createElement("span");
-      remove.textContent = "×";
-      remove.className = "remove";
-      remove.onclick = (e) => {
-        e.stopPropagation();
-        removeDeveloper(dev.name);
-      };
-
-      chip.appendChild(label);
-      chip.appendChild(remove);
+      chip.innerHTML = `<span>${dev.name}</span><span class="remove" onclick="event.stopPropagation(); removeDeveloper('${dev.name}')">×</span>`;
       chipsEl.appendChild(chip);
     });
 
@@ -398,7 +377,7 @@
     const appsEl = document.getElementById('apps');
     appsEl.innerHTML = "";
 
-    const filtered = state.apps.filter(app => 
+    const filtered = getSortedApps().filter(app => 
       state.activeDeveloper === "ALL" || app.developer === state.activeDeveloper
     );
 
@@ -414,7 +393,7 @@
           </div>
         </div>
         <div class="meta">
-          <span><b>First:</b> ${app.v1 ? new Date(app.v1).toLocaleDateString() : "—"}</span>
+          <span><b>Released:</b> ${app.released ? new Date(app.released).toLocaleDateString() : "—"}</span>
           <span><b>Updated:</b> ${app.latest ? new Date(app.latest).toLocaleDateString() : "—"}</span>
           <span><b>Rating:</b> ${app.rating.toFixed(1)} (${app.ratingCount.toLocaleString()})</span>
         </div>
