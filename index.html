@@ -2,139 +2,260 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>App Store Developer App Finder</title>
+  <title>App Store Developer Tracker</title>
 
   <style>
-    /* ---- Basic page styling ---- */
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
       background: #f6f7f9;
-      padding: 40px;
+      padding: 32px;
     }
 
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    input {
-      padding: 10px;
-      width: 300px;
-      font-size: 16px;
+    input, button {
+      padding: 8px 12px;
+      font-size: 14px;
     }
 
     button {
-      padding: 10px 16px;
-      font-size: 16px;
-      margin-left: 8px;
       cursor: pointer;
     }
 
-    #results {
-      margin-top: 30px;
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .chip {
+      padding: 6px 10px;
+      border-radius: 14px;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .chip.active {
+      background: #0066cc;
+      color: white;
+    }
+
+    .info {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 16px;
+    }
+
+    #apps {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 16px;
     }
 
     .app {
       background: white;
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
+      border-radius: 10px;
+      padding: 14px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
 
-    .app img {
-      width: 100px;
-      height: 100px;
-      border-radius: 22%;
+    .header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
     }
 
-    .app a {
-      display: block;
-      margin-top: 8px;
-      text-decoration: none;
-      color: #0066cc;
-      font-weight: 500;
+    img {
+      width: 72px;
+      height: 72px;
+      border-radius: 18%;
     }
 
-    .error {
-      margin-top: 20px;
-      color: #b00020;
+    .meta {
+      font-size: 13px;
+      margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    .actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
     }
   </style>
 </head>
 
 <body>
-  <h1>App Store Developer Lookup</h1>
-  <p>Enter an App Store developer name and click “Check Apps”.</p>
 
-  <input id="developerInput" placeholder="Developer name" />
-  <button onclick="fetchApps()">Check Apps</button>
+  <h1>App Store Developer Tracker</h1>
 
-  <div id="results"></div>
-  <div id="error" class="error"></div>
+  <div class="controls">
+    <input id="devInput" placeholder="Add developer name" />
+    <button onclick="addDeveloper()">Add</button>
+    <button onclick="refreshAll()">Refresh</button>
+  </div>
 
-  <script>
-    async function fetchApps() {
-      // Clear previous results and errors
-      document.getElementById("results").innerHTML = "";
-      document.getElementById("error").textContent = "";
+  <div class="info" id="info"></div>
 
-      // Read developer name from input
-      const developerName = document.getElementById("developerInput").value.trim();
+  <div class="chips" id="chips"></div>
 
-      if (!developerName) {
-        document.getElementById("error").textContent = "Please enter a developer name.";
-        return;
-      }
+  <div id="apps"></div>
 
-      // Build Apple Search API URL
-      const url =
-        "https://itunes.apple.com/search?" +
-        "term=" + encodeURIComponent(developerName) +
-        "&entity=software" +
-        "&limit=50";
+<script>
+  const STORAGE_KEY = "appTrackerData";
 
-      try {
-        // Call Apple API
-        const response = await fetch(url);
-        const data = await response.json();
+  let state = {
+    developers: [],
+    apps: [],
+    lastRefreshed: null,
+    activeDeveloper: "ALL"
+  };
 
-        // Filter apps that match the developer exactly
-        const apps = data.results.filter(
-          app => app.artistName.toLowerCase() === developerName.toLowerCase()
-        );
+  // ---------- Persistence ----------
+  function loadState() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) state = JSON.parse(saved);
+  }
 
-        if (apps.length === 0) {
-          document.getElementById("error").textContent =
-            "No apps found for this developer name.";
-          return;
-        }
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
 
-        // Render apps
-        const resultsDiv = document.getElementById("results");
+  // ---------- Developer Management ----------
+  function addDeveloper() {
+    const name = devInput.value.trim();
+    if (!name) return;
 
-        apps.forEach(app => {
-          const div = document.createElement("div");
-          div.className = "app";
-
-          div.innerHTML = `
-            <img src="${app.artworkUrl100}" alt="${app.trackName}">
-            <strong>${app.trackName}</strong>
-            <a href="${app.trackViewUrl}" target="_blank">
-              View on App Store
-            </a>
-          `;
-
-          resultsDiv.appendChild(div);
-        });
-
-      } catch (err) {
-        document.getElementById("error").textContent =
-          "Failed to load data from Apple.";
-      }
+    if (!state.developers.find(d => d.name === name)) {
+      state.developers.push({ name });
+      saveState();
+      render();
     }
-  </script>
+
+    devInput.value = "";
+  }
+
+  // ---------- Fetching ----------
+  async function fetchAppsForDeveloper(devName) {
+    const url =
+      "https://itunes.apple.com/search?" +
+      "term=" + encodeURIComponent(devName) +
+      "&entity=software&limit=50";
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return data.results
+      .filter(a => a.artistName.toLowerCase() === devName.toLowerCase())
+      .map(a => ({
+        id: a.trackId,
+        name: a.trackName,
+        icon: a.artworkUrl100,
+        url: a.trackViewUrl,
+        developer: devName,
+        v1: a.releaseDate,
+        latest: a.currentVersionReleaseDate,
+        rating: a.averageUserRating || null,
+        ratingCount: a.userRatingCount || 0
+      }));
+  }
+
+  async function refreshAll() {
+    state.apps = [];
+
+    for (const dev of state.developers) {
+      const apps = await fetchAppsForDeveloper(dev.name);
+      state.apps.push(...apps);
+    }
+
+    state.lastRefreshed = new Date().toISOString();
+
+    // Reverse chronological by latest update
+    state.apps.sort((a, b) =>
+      new Date(b.latest || 0) - new Date(a.latest || 0)
+    );
+
+    saveState();
+    render();
+  }
+
+  // ---------- Rendering ----------
+  function render() {
+    renderInfo();
+    renderChips();
+    renderApps();
+  }
+
+  function renderInfo() {
+    info.textContent = state.lastRefreshed
+      ? `Last refreshed: ${new Date(state.lastRefreshed).toLocaleString()}`
+      : "Not refreshed yet";
+  }
+
+  function renderChips() {
+    chips.innerHTML = "";
+
+    ["ALL", ...state.developers.map(d => d.name)].forEach(name => {
+      const c = document.createElement("div");
+      c.className = "chip" + (state.activeDeveloper === name ? " active" : "");
+      c.textContent = name;
+      c.onclick = () => {
+        state.activeDeveloper = name;
+        renderApps();
+      };
+      chips.appendChild(c);
+    });
+  }
+
+  function renderApps() {
+    apps.innerHTML = "";
+
+    state.apps
+      .filter(app =>
+        state.activeDeveloper === "ALL" ||
+        app.developer === state.activeDeveloper
+      )
+      .forEach(app => {
+        const div = document.createElement("div");
+        div.className = "app";
+
+        div.innerHTML = `
+          <div class="header">
+            <img src="${app.icon}">
+            <div>
+              <strong>${app.name}</strong><br>
+              <small>${app.developer}</small>
+            </div>
+          </div>
+
+          <div class="meta">
+            v1: ${app.v1 ? new Date(app.v1).toLocaleDateString() : "—"}<br>
+            Latest: ${app.latest ? new Date(app.latest).toLocaleDateString() : "—"}<br>
+            Rating: ${app.rating ?? "—"} (${app.ratingCount})
+          </div>
+
+          <div class="actions">
+            <button onclick="window.open('${app.url}')">Open</button>
+            <button onclick="navigator.clipboard.writeText('${app.url}')">
+              Copy URL
+            </button>
+          </div>
+        `;
+
+        apps.appendChild(div);
+      });
+  }
+
+  // ---------- Init ----------
+  loadState();
+  render();
+</script>
+
 </body>
 </html>
