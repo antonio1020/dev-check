@@ -218,6 +218,12 @@
       font-weight: 600;
       padding: 6px 12px;
       cursor: pointer;
+      transition: transform 0.1s ease; /* Added transition */
+    }
+
+    /* Added scale effect on click */
+    .actions button:active {
+      transform: scale(0.95);
     }
 
     @media (max-width: 600px) {
@@ -237,10 +243,10 @@
     </div>
 
     <div class="status-container">
+      <div class="last-refreshed" id="info">Not refreshed yet</div>
       <button class="refresh-btn" onclick="refreshAll()" id="refreshBtn">
         ↻ Refresh All
       </button>
-      <div class="last-refreshed" id="info">Not refreshed yet</div>
     </div>
 
     <div class="filter-section">
@@ -250,7 +256,7 @@
         <option value="updated">Recently Updated</option>
         <option value="released_new">Newest Released</option>
         <option value="released_old">Oldest Released</option>
-      </select>
+        <option value="rating_high">Highest Rating</option> <option value="rating_count">Most Ratings</option> </select>
     </div>
 
     <div id="apps"></div>
@@ -367,6 +373,12 @@
       apps.sort((a, b) => new Date(b.released || 0) - new Date(a.released || 0));
     } else if (state.sortOrder === "released_old") {
       apps.sort((a, b) => new Date(a.released || 0) - new Date(b.released || 0));
+    } else if (state.sortOrder === "rating_high") {
+      // New Sort: Rating High
+      apps.sort((a, b) => b.rating - a.rating);
+    } else if (state.sortOrder === "rating_count") {
+      // New Sort: Rating Count High
+      apps.sort((a, b) => b.ratingCount - a.ratingCount);
     }
     return apps;
   }
@@ -398,6 +410,10 @@
     );
 
     filtered.forEach(app => {
+      // Use 'en-GB' for DD/MM/YYYY format
+      const releasedDate = app.released ? new Date(app.released).toLocaleDateString('en-GB') : "—";
+      const updatedDate = app.latest ? new Date(app.latest).toLocaleDateString('en-GB') : "—";
+
       const div = document.createElement("div");
       div.className = "app";
       div.innerHTML = `
@@ -409,8 +425,8 @@
           </div>
         </div>
         <div class="meta">
-          <span><b>Released:</b> ${app.released ? new Date(app.released).toLocaleDateString() : "—"}</span>
-          <span><b>Updated:</b> ${app.latest ? new Date(app.latest).toLocaleDateString() : "—"}</span>
+          <span><b>Released:</b> ${releasedDate}</span>
+          <span><b>Updated:</b> ${updatedDate}</span>
           <span><b>Rating:</b> ${app.rating.toFixed(1)} (${app.ratingCount.toLocaleString()})</span>
         </div>
         <div class="actions">
