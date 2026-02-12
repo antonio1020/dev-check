@@ -290,15 +290,32 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  function addDeveloper() {
+  async function addDeveloper() {
     const name = devInput.value.trim();
     if (!name) return;
     if (!state.developers.find(d => d.name.toLowerCase() === name.toLowerCase())) {
+      // Add developer
       state.developers.push({ name });
       saveState();
+      
+      // Disable input and show loading state
+      devInput.disabled = true;
+      devInput.value = "Fetching apps...";
+      
+      // Fetch apps for this developer
+      const apps = await fetchAppsForDeveloper(name);
+      state.apps.push(...apps);
+      state.lastRefreshed = new Date().toISOString();
+      saveState();
+      
+      // Re-enable input and clear
+      devInput.disabled = false;
+      devInput.value = "";
+      
       render();
+    } else {
+      devInput.value = "";
     }
-    devInput.value = "";
   }
 
   function removeDeveloper(name) {
