@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/dev-check/apple-touch-icon.png">
   
@@ -78,7 +77,6 @@
       box-shadow: 0 0 0 2px var(--primary);
     }
 
-    /* ADD Button Style */
     .btn-add {
       font-size: 16px;
       font-weight: 500;
@@ -94,15 +92,9 @@
       transition: all 0.2s;
     }
 
-    .btn-add:hover {
-      background-color: var(--secondary-hover);
-    }
+    .btn-add:hover { background-color: var(--secondary-hover); }
+    .btn-add:active { transform: scale(0.97); }
 
-    .btn-add:active {
-      transform: scale(0.97);
-    }
-
-    /* HStack Status Bar */
     .status-container {
       display: flex;
       justify-content: space-between;
@@ -129,6 +121,7 @@
     }
 
     .refresh-btn:hover { opacity: 0.7; }
+    .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .last-refreshed {
       font-size: 13px;
@@ -138,7 +131,6 @@
       letter-spacing: 0.05em;
     }
 
-    /* Sort & Chips Section (Stacked Layout) */
     .filter-section {
       display: flex;
       flex-direction: column;
@@ -181,7 +173,6 @@
       width: auto;
     }
 
-    /* App List */
     #apps { display: flex; flex-direction: column; gap: 12px; }
 
     .app {
@@ -192,7 +183,7 @@
     }
 
     .header { display: flex; gap: 16px; align-items: center; }
-    .header img { width: 56px; height: 56px; border-radius: 12px; border: 1px solid #eee; }
+    .header img { width: 56px; height: 56px; border-radius: 12px; border: 1px solid #eee; object-fit: cover; }
     .header-text strong { display: block; font-size: 16px; }
     .header-text small { color: #6b7280; font-size: 13px; }
 
@@ -218,13 +209,10 @@
       font-weight: 600;
       padding: 6px 12px;
       cursor: pointer;
-      transition: transform 0.1s ease; /* Added transition */
+      transition: transform 0.1s ease;
     }
 
-    /* Added scale effect on click */
-    .actions button:active {
-      transform: scale(0.95);
-    }
+    .actions button:active { transform: scale(0.95); }
 
     @media (max-width: 600px) {
       .meta { flex-direction: column; gap: 4px; }
@@ -256,7 +244,9 @@
         <option value="updated">Recently Updated</option>
         <option value="released_new">Newest Released</option>
         <option value="released_old">Oldest Released</option>
-        <option value="rating_high">Highest Rating</option> <option value="rating_count">Most Ratings</option> </select>
+        <option value="rating_high">Highest Rating</option>
+        <option value="rating_count">Most Ratings</option>
+      </select>
     </div>
 
     <div id="apps"></div>
@@ -290,25 +280,79 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
+  async function fetchAppsForDeveloper(devName) {
+    try {
+      // 1. Narrow the search directly to the developer/artist field with 200 limit
+      const searchUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(devName)}&entity=software&attribute=artistTerm&limit=200`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+
+      if (!searchData.results || searchData.results.length === 0) return [];
+
+      // 2. Identify the closest artist match to get their Apple artistId
+      const target = devName.toLowerCase();
+      const matched = searchData.results.find(a => 
+        (a.artistName || "").toLowerCase() === target
+      ) || searchData.results.find(a => 
+        (a.artistName || "").toLowerCase().includes(target)
+      ) || searchData.results[0];
+
+      let rawApps = [];
+
+      if (matched && matched.artistId) {
+        // 3. Direct catalog lookup by ID (fetches catalog without search ranking bias)
+        const lookupUrl = `https://itunes.apple.com/lookup?id=${matched.artistId}&entity=software&limit=200`;
+        const lookupRes = await fetch(lookupUrl);
+        const lookupData = await lookupRes.json();
+        
+        // Exclude the artist wrapper metadata item, keep only apps
+        rawApps = lookupData.results.filter(item => item.wrapperType === "software");
+      } else {
+        // Fallback to fuzzy artist match from search results
+        rawApps = searchData.results.filter(a => 
+          (a.artistName || "").toLowerCase().includes(target)
+        );
+      }
+
+      return rawApps.map(a => ({
+        id: a.trackId,
+        name: a.trackName,
+        icon: a.artworkUrl100,
+        url: a.trackViewUrl,
+        developer: devName, // Keep tied to the queried dev tag for chip filtering
+        artistName: a.artistName,
+        released: a.releaseDate,
+        latest: a.currentVersionReleaseDate,
+        rating: a.averageUserRating || 0,
+        ratingCount: a.userRatingCount || 0
+      }));
+    } catch (e) {
+      console.error(`Failed to fetch apps for ${devName}:`, e);
+      return [];
+    }
+  }
+
   async function addDeveloper() {
     const name = devInput.value.trim();
     if (!name) return;
+    
     if (!state.developers.find(d => d.name.toLowerCase() === name.toLowerCase())) {
-      // Add developer
       state.developers.push({ name });
       saveState();
       
-      // Disable input and show loading state
       devInput.disabled = true;
       devInput.value = "Fetching apps...";
       
-      // Fetch apps for this developer
-      const apps = await fetchAppsForDeveloper(name);
-      state.apps.push(...apps);
+      const newApps = await fetchAppsForDeveloper(name);
+      
+      // Remove any existing duplicates before pushing
+      const existingIds = new Set(state.apps.map(a => a.id));
+      const filteredNew = newApps.filter(a => !existingIds.has(a.id));
+      
+      state.apps.push(...filteredNew);
       state.lastRefreshed = new Date().toISOString();
       saveState();
       
-      // Re-enable input and clear
       devInput.disabled = false;
       devInput.value = "";
       
@@ -334,27 +378,6 @@
     render();
   }
 
-  async function fetchAppsForDeveloper(devName) {
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(devName)}&entity=software&limit=50`;
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      return data.results
-        .filter(a => a.artistName.toLowerCase() === devName.toLowerCase())
-        .map(a => ({
-          id: a.trackId,
-          name: a.trackName,
-          icon: a.artworkUrl100,
-          url: a.trackViewUrl,
-          developer: devName,
-          released: a.releaseDate,
-          latest: a.currentVersionReleaseDate,
-          rating: a.averageUserRating || 0,
-          ratingCount: a.userRatingCount || 0
-        }));
-    } catch (e) { return []; }
-  }
-
   async function refreshAll() {
     refreshBtn.textContent = "Updating...";
     refreshBtn.disabled = true;
@@ -365,7 +388,14 @@
       allApps.push(...apps);
     }
 
-    state.apps = allApps;
+    // Deduplicate by trackId
+    const seen = new Set();
+    state.apps = allApps.filter(app => {
+      if (seen.has(app.id)) return false;
+      seen.add(app.id);
+      return true;
+    });
+
     state.lastRefreshed = new Date().toISOString();
     saveState();
     render();
@@ -377,7 +407,6 @@
   function formatRefreshTime(isoString) {
     if (!isoString) return "Not refreshed yet";
     const date = new Date(isoString);
-    // 24h format, No seconds
     return "Last refreshed: " + date.toLocaleDateString('en-GB') + " " + 
            date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
   }
@@ -391,10 +420,8 @@
     } else if (state.sortOrder === "released_old") {
       apps.sort((a, b) => new Date(a.released || 0) - new Date(b.released || 0));
     } else if (state.sortOrder === "rating_high") {
-      // New Sort: Rating High
       apps.sort((a, b) => b.rating - a.rating);
     } else if (state.sortOrder === "rating_count") {
-      // New Sort: Rating Count High
       apps.sort((a, b) => b.ratingCount - a.ratingCount);
     }
     return apps;
@@ -405,6 +432,7 @@
 
     const chipsEl = document.getElementById('chips');
     chipsEl.innerHTML = "";
+    
     const allChip = document.createElement("div");
     allChip.className = `chip ${state.activeDeveloper === "ALL" ? "active" : ""}`;
     allChip.textContent = "ALL";
@@ -427,7 +455,6 @@
     );
 
     filtered.forEach(app => {
-      // Use 'en-GB' for DD/MM/YYYY format
       const releasedDate = app.released ? new Date(app.released).toLocaleDateString('en-GB') : "—";
       const updatedDate = app.latest ? new Date(app.latest).toLocaleDateString('en-GB') : "—";
 
@@ -435,10 +462,10 @@
       div.className = "app";
       div.innerHTML = `
         <div class="header">
-          <img src="${app.icon}">
+          <img src="${app.icon || ''}" alt="">
           <div class="header-text">
             <strong>${app.name}</strong>
-            <small>${app.developer}</small>
+            <small>${app.artistName || app.developer}</small>
           </div>
         </div>
         <div class="meta">
